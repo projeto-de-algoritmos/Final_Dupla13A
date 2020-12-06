@@ -2,9 +2,6 @@ import copy
 import math
 import random
 import sys
-import threading
-import time
-
 import colors
 import pygame
 
@@ -12,12 +9,10 @@ size = (1366, 768)
 spacing = 80
 starting_x = abs((((size[0] - 20) // spacing) * spacing) - size[0]) / 2
 starting_y = abs((((size[1] - 20) // spacing) * spacing) - size[1]) / 2
-print(starting_x, starting_y)
 clock = pygame.time.Clock()
 
 rad = math.pi / 180
 strong_connected = False
-stop_thread = False
 
 pygame.init()
 
@@ -130,24 +125,25 @@ def restart_game_window():
 
 
 def quit_game():
-    global stop_thread
-    stop_thread = True
     pygame.quit()
     sys.exit()
 
 
-def update(graph, player, out, machine):
+def update(graph, player, player_2, deposit):
     screen.fill(colors.WHITE)
-    draw_edges(graph)
+    draw_walls(graph)
     player.rect[0] += player.movement[0]
     player.rect[0] -= player.movement[1]
     player.rect[1] += player.movement[2]
     player.rect[1] -= player.movement[3]
-    pygame.draw.rect(screen, colors.PLAYER, player.rect, 10)
+    player_2.rect[0] += player_2.movement[0]
+    player_2.rect[0] -= player_2.movement[1]
+    player_2.rect[1] += player_2.movement[2]
+    player_2.rect[1] -= player_2.movement[3]
+    pygame.draw.rect(screen, player.color, player.rect, 10)
+    pygame.draw.rect(screen, player_2.color, player_2.rect, 10)
     for node in graph.nodes:
-        if machine.position == (node.rect[0], node.rect[1]):
-            draw_circle(node, colors.MACHINE)
-        elif out.position == (node.rect[0], node.rect[1]):
+        if deposit.position == (node.rect[0], node.rect[1]):
             draw_circle(node, colors.EXIT)
 
 
@@ -178,7 +174,7 @@ class Player(object):
         self.rect = pygame.Rect(self.position[0], self.position[1], 10, 10)
 
 
-class Exit(object):
+class Deposit(object):
     def __init__(self):
         self.color = colors.EXIT
         self.position = random_pos()
@@ -371,8 +367,7 @@ def bfs(node):
                 queue.append(neighbour)
 
 
-def draw_edges(graph):
-    global wall_rect
+def draw_walls(graph):
     for node in graph.nodes:
         left_neighbour = 0
         right_neighbour = 0
@@ -412,167 +407,148 @@ def draw_circle(node, color):
     return pygame.draw.circle(screen, color, node.rect.center, 10)
 
 
-# function to transform line to arrow
-def arrow(scr, lcolor, tricolor, start, end, trirad, thickness=1):
-    pygame.draw.line(scr, lcolor, start, end, thickness)
-    rotation = (math.atan2(start[1] - end[1], end[0] - start[0])) + math.pi / 2
-    pygame.draw.polygon(scr, tricolor, ((end[0] + trirad * math.sin(rotation),
-                                         end[1] + trirad * math.cos(rotation)),
-                                        (end[0] + trirad * math.sin(rotation - 120 * rad),
-                                         end[1] + trirad * math.cos(rotation - 120 * rad)),
-                                        (end[0] + trirad * math.sin(rotation + 120 * rad),
-                                         end[1] + trirad * math.cos(rotation + 120 * rad))))
-
-
 # ensures minimum distance between starting nodes
-def min_dist(graph, player, machine, out):
-    player_distance = dijkstra(graph, graph.positions[player.position], graph.positions[out.position])
+def min_dist(graph, player, player2, deposit):
+    player_distance = dijkstra(graph, graph.positions[player.position], graph.positions[deposit.position])
     while player_distance[1] < 20:
         player.position = random_pos()
-        player_distance = dijkstra(graph, graph.positions[player.position], graph.positions[out.position])
+        player_distance = dijkstra(graph, graph.positions[player.position], graph.positions[deposit.position])
 
-    machine_distance = dijkstra(graph, graph.positions[machine.position], graph.positions[out.position])
-    while machine_distance[1] <= player_distance[1]:
-        machine.position = random_pos()
-        machine_distance = dijkstra(graph, graph.positions[machine.position], graph.positions[out.position])
-
-    return machine_distance
-
-
-# function moves the machine along shortest path and is also responsible for player/machine stamina regeneration
-def machine_mov(machine, path, player, graph):
-    global stop_thread
-    for pos in path[0]:
-        if stop_thread:
-            break
-        time.sleep(1)
+    player2_distance = dijkstra(graph, graph.positions[player2.position], graph.positions[deposit.position])
+    while player2_distance[1] < 20:
+        player2.position = random_pos()
+        player2_distance = dijkstra(graph, graph.positions[player2.position], graph.positions[deposit.position])
 
 
 def closest_multiple(n, x, offset):
     return (round((n - offset) / x) * x) + offset
 
 
-# main game loop where player input is read
-def game_loop():
+def player_movement_control(player, graph):
     vertical_move = False
     horizontal_move = False
     target = 80
     x_offset = 43
     y_offset = 24
-    screen.fill(colors.WHITE)
+
+    closest_x = closest_multiple(player.rect[0], target, x_offset)
+    closest_y = closest_multiple(player.rect[1], target, y_offset)
+
+    if abs(player.rect[0] - closest_x) > abs(player.rect[1] - closest_y):
+        horizontal_move = True
+        vertical_move = False
+    elif abs(player.rect[0] - closest_x) < abs(player.rect[1] - closest_y):
+        horizontal_move = False
+        vertical_move = True
+
+    # down
+    if (closest_x, closest_y + spacing) in graph.positions:
+        if graph.positions[closest_x, closest_y + spacing] not in graph.positions[closest_x, closest_y].neighbours:
+            if player.rect[1] > closest_y + 4:
+                player.rect[1] = closest_y + 4
+    elif player.rect[1] > closest_y + 4:
+        player.rect[1] = closest_y + 4
+
+    # up
+    if (closest_x, closest_y - spacing) in graph.positions:
+        if graph.positions[closest_x, closest_y - spacing] not in graph.positions[closest_x, closest_y].neighbours:
+            if player.rect[1] < closest_y - 4:
+                player.rect[1] = closest_y - 4
+    elif player.rect[1] < closest_y - 4:
+        player.rect[1] = closest_y - 4
+
+    # left
+    if (closest_x - spacing, closest_y) in graph.positions:
+        if graph.positions[closest_x - spacing, closest_y] not in graph.positions[closest_x, closest_y].neighbours:
+            if player.rect[0] < closest_x - 4:
+                player.rect[0] = closest_x - 4
+    elif player.rect[0] < closest_x - 4:
+        player.rect[0] = closest_x - 4
+
+    # right
+    if (closest_x + spacing, closest_y) in graph.positions:
+        if graph.positions[closest_x + spacing, closest_y] not in graph.positions[closest_x, closest_y].neighbours:
+            if player.rect[0] > closest_x + 4:
+                player.rect[0] = closest_x + 4
+    elif player.rect[0] > closest_x + 4:
+        player.rect[0] = closest_x + 4
+
+    if horizontal_move:
+        if player.rect[1] > closest_y + 4:
+            player.rect[1] = closest_y + 4
+        elif player.rect[1] < closest_y - 4:
+            player.rect[1] = closest_y - 4
+    elif vertical_move:
+        if player.rect[0] < closest_x - 4:
+            player.rect[0] = closest_x - 4
+        elif player.rect[0] > closest_x + 4:
+            player.rect[0] = closest_x + 4
+
+
+# main game loop where player input is read
+def game_loop():
     graph = create_graph()
-    player = Player()
-    player.color = colors.PLAYER
-    machine = Player()
-    machine.color = colors.MACHINE
-    out = Exit()
-    out.position = random_pos()
+    player_1 = Player()
+    player_2 = Player()
+    player_1.color = colors.PLAYER
+    player_2.color = colors.PLAYER2
+    deposit = Deposit()
+    deposit.position = random_pos()
 
     rev_graph = reverse_graph(graph)
-    strongly_connect(graph, rev_graph, player.position)
+    strongly_connect(graph, rev_graph, player_1.position)
 
     for node in graph.nodes:
         node.neighbours = dict.fromkeys(node.neighbours, random.randint(1, 3))
 
-    draw_edges(graph)
+    draw_walls(graph)
 
-    path = min_dist(graph, player, machine, out)
-
-    global stop_thread
-    stop_thread = False
-
-    x = threading.Thread(target=machine_mov, args=(machine, path, player, graph))
-    x.start()
+    min_dist(graph, player_1, player_2, deposit)
 
     while True:
 
-        update(graph, player, out, machine)
+        update(graph, player_1, player_2, deposit)
 
-        if player.position == out.position:
-            game_win_text()
-            restart_game_window()
-            quit_game()
-        elif machine.position == out.position:
-            game_lose_text()
-            restart_game_window()
-            quit_game()
-
-        n_x = player.rect[0]
-        n_y = player.rect[1]
-        closest_x = closest_multiple(n_x, target, x_offset)
-        closest_y = closest_multiple(n_y, target, y_offset)
-
-        if abs(player.rect[0] - closest_x) > abs(player.rect[1] - closest_y):
-            horizontal_move = True
-            vertical_move = False
-        elif abs(player.rect[0] - closest_x) < abs(player.rect[1] - closest_y):
-            horizontal_move = False
-            vertical_move = True
-
-        # down
-        if (closest_x, closest_y + spacing) in graph.positions:
-            if graph.positions[closest_x, closest_y + spacing] not in graph.positions[closest_x, closest_y].neighbours:
-                if player.rect[1] > closest_y + 4:
-                    player.rect[1] = closest_y + 4
-        elif player.rect[1] > closest_y + 4:
-            player.rect[1] = closest_y + 4
-
-        # up
-        if (closest_x, closest_y - spacing) in graph.positions:
-            if graph.positions[closest_x, closest_y - spacing] not in graph.positions[closest_x, closest_y].neighbours:
-                if player.rect[1] < closest_y - 4:
-                    player.rect[1] = closest_y - 4
-        elif player.rect[1] < closest_y - 4:
-            player.rect[1] = closest_y - 4
-
-        # left
-        if (closest_x - spacing, closest_y) in graph.positions:
-            if graph.positions[closest_x - spacing, closest_y] not in graph.positions[closest_x, closest_y].neighbours:
-                if player.rect[0] < closest_x - 4:
-                    player.rect[0] = closest_x - 4
-        elif player.rect[0] < closest_x - 4:
-            player.rect[0] = closest_x - 4
-
-        # right
-        if (closest_x + spacing, closest_y) in graph.positions:
-            if graph.positions[closest_x + spacing, closest_y] not in graph.positions[closest_x, closest_y].neighbours:
-                if player.rect[0] > closest_x + 4:
-                    player.rect[0] = closest_x + 4
-        elif player.rect[0] > closest_x + 4:
-            player.rect[0] = closest_x + 4
-
-        if horizontal_move:
-            if player.rect[1] > closest_y + 4:
-                player.rect[1] = closest_y + 4
-            elif player.rect[1] < closest_y - 4:
-                player.rect[1] = closest_y - 4
-        elif vertical_move:
-            if player.rect[0] < closest_x - 4:
-                player.rect[0] = closest_x - 4
-            elif player.rect[0] > closest_x + 4:
-                player.rect[0] = closest_x + 4
+        player_movement_control(player_1, graph)
+        player_movement_control(player_2, graph)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 quit_game()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_DOWN:
-                    player.movement[2] = 2
+                    player_1.movement[2] = 2
                 if event.key == pygame.K_UP:
-                    player.movement[3] = 2
+                    player_1.movement[3] = 2
                 if event.key == pygame.K_LEFT:
-                    player.movement[1] = 2
+                    player_1.movement[1] = 2
                 if event.key == pygame.K_RIGHT:
-                    player.movement[0] = 2
+                    player_1.movement[0] = 2
+                if event.key == pygame.K_s:
+                    player_2.movement[2] = 2
+                if event.key == pygame.K_w:
+                    player_2.movement[3] = 2
+                if event.key == pygame.K_a:
+                    player_2.movement[1] = 2
+                if event.key == pygame.K_d:
+                    player_2.movement[0] = 2
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_DOWN:
-                    player.movement[2] = 0
+                    player_1.movement[2] = 0
                 if event.key == pygame.K_UP:
-                    player.movement[3] = 0
+                    player_1.movement[3] = 0
                 if event.key == pygame.K_LEFT:
-                    player.movement[1] = 0
+                    player_1.movement[1] = 0
                 if event.key == pygame.K_RIGHT:
-                    player.movement[0] = 0
+                    player_1.movement[0] = 0
+                if event.key == pygame.K_s:
+                    player_2.movement[2] = 0
+                if event.key == pygame.K_w:
+                    player_2.movement[3] = 0
+                if event.key == pygame.K_a:
+                    player_2.movement[1] = 0
+                if event.key == pygame.K_d:
+                    player_2.movement[0] = 0
 
         pygame.display.update()
         clock.tick(60)

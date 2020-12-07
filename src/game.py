@@ -62,14 +62,9 @@ def text_outline(text_font, message, font_color, outline_color):
     return img
 
 
-def game_win_text():
-    win_text = text_outline(font, 'YOU WIN!', colors.WHITE, colors.BLACK)
-    screen.blit(win_text, (430, 300))
-
-
-def game_lose_text():
-    win_text = text_outline(font, 'YOU LOSE!', colors.WHITE, colors.BLACK)
-    screen.blit(win_text, (410, 300))
+def game_win_text(player):
+    win_text = text_outline(font, str(player) + " WINS!", colors.WHITE, colors.BLACK)
+    screen.blit(win_text, (270, 300))
 
 
 def text_objects(text, text_font):
@@ -112,7 +107,7 @@ def menu_game_window():
         clock.tick(15)
 
 
-def restart_game_window():
+def restart_game_window(player):
     restart_game = True
 
     while restart_game:
@@ -120,6 +115,7 @@ def restart_game_window():
             if event.type == pygame.QUIT:
                 quit_game()
 
+        game_win_text(player)
         button('RESTART', 510, 450, 100, 50, colors.GREEN, game_loop)
         button('QUIT', 750, 450, 100, 50, colors.RED, quit_game)
 
@@ -607,6 +603,10 @@ def img_flip(player):
         player.angle = 90
 
 
+def dist(p1, p2):
+    return math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2)
+
+
 # main game loop where player input is read
 def game_loop():
     global animation_frames
@@ -666,6 +666,20 @@ def game_loop():
 
         player_movement_control(player_1, graph)
         player_movement_control(player_2, graph)
+
+        if dist(player_1.rect.center, player_2.rect.center) < 15:
+            if player_1.value > player_2.value:
+                restart_game_window("PLAYER 1")
+            elif player_2.value > player_1.value:
+                restart_game_window("PLAYER 2")
+        if dist(player_1.rect.center, (deposit.position[0], deposit.position[1])) < 15:
+            print("knapsack player 1")
+        if dist(player_2.rect.center, (deposit.position[0], deposit.position[1])) < 15:
+            print("knapsack player 2")
+        if deposit.player1_value >= 100:
+            restart_game_window("PLAYER 1")
+        if deposit.player2_value >= 100:
+            restart_game_window("PLAYER 2")
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

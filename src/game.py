@@ -5,7 +5,7 @@ import sys
 import colors
 import pygame
 import time
-
+import merge_sort as mg, closest_pair_of_points as closest
 
 size = (1366, 768)
 spacing = 80
@@ -32,6 +32,8 @@ font = pygame.font.SysFont('default', 150)
 cost_font = pygame.font.SysFont('default', 30)
 
 import auxiliary as aux
+
+
 # auxiliary function for drawing text
 def text_hollow(text_font, message, font_color):
     not_color = [c ^ 0xFF for c in font_color]
@@ -211,6 +213,7 @@ class Node(object):
 class Player(object):
     def __init__(self):
         self.image = None
+        self.items = []
         self.max_load = 30
         self.current_load = 0
         self.value = 0
@@ -478,7 +481,7 @@ def random_pos():
 
 
 def draw_circle(node, color):
-    return pygame.draw.circle(screen, color, (node.position[0]+5, node.position[1]+5), 10)
+    return pygame.draw.circle(screen, color, (node.position[0] + 5, node.position[1] + 5), 10)
 
 
 # ensures minimum distance between starting nodes
@@ -607,6 +610,91 @@ def dist(p1, p2):
     return math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2)
 
 
+def get_x_coordinates(graph, player, player2):
+    temp = []
+    for item in graph.itens:
+        temp.append((item.rect[0], item.rect[1]))
+    temp.append((player.rect[0], player.rect[1]))
+    temp.append((player2.rect[0], player2.rect[1]))
+    return temp
+
+
+def knapsack(w, wt, val, n):
+    k = [[0 for x in range(w + 1)] for x in range(n + 1)]
+
+    for i in range(n + 1):
+        for w in range(w + 1):
+            if i == 0 or w == 0:
+                k[i][w] = 0
+            elif wt[i - 1] <= w:
+                k[i][w] = max(val[i - 1] + k[i - 1][w - wt[i - 1]], k[i - 1][w])
+            else:
+                k[i][w] = k[i - 1][w]
+
+    result = []
+    for i in range(n, 0, -1):
+        if k[i-1][w] == k[i][w]:
+            continue
+        else:
+            result.append([wt[i-1], val[i-1]])
+            w -= wt[i-1]
+
+    return result
+
+
+# detects collision using closest pair algorithm
+def collision(graph, ordered_array, player, player_2):
+    if graph.itens:
+        pair = closest.closest_pair(ordered_array)
+        p1 = pair[0]
+        p2 = pair[1]
+        if p1 and math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) < 15:
+            if p1 == (player.rect[0], player.rect[1]) or p2 == (player.rect[0], player.rect[1]):
+                for item in graph.itens:
+                    if (item.rect[0], item.rect[1]) == p1 or (item.rect[0], item.rect[1]) == p2:
+                        wt = []
+                        vl = []
+                        for element in player.items:
+                            wt.append(element[0])
+                            vl.append(element[1])
+                        wt.append(item.weight)
+                        vl.append(item.value)
+                        player.current_load = 0
+                        player.value = 0
+                        player.items = knapsack(player.max_load, wt, vl, len(wt))
+                        for element in player.items:
+                            player.current_load += element[0]
+                            player.value += element[1]
+                        graph.itens.remove(item)
+                        graph.item_positions.pop((item.rect[0], item.rect[1]))
+                        break
+            elif p1 == (player_2.rect[0], player_2.rect[1]) or p2 == (player_2.rect[0], player_2.rect[1]):
+                for item in graph.itens:
+                    if (item.rect[0], item.rect[1]) == p1 or (item.rect[0], item.rect[1]) == p2:
+                        wt = []
+                        vl = []
+                        for element in player_2.items:
+                            wt.append(element[0])
+                            vl.append(element[1])
+                        wt.append(item.weight)
+                        vl.append(item.value)
+                        player_2.current_load = 0
+                        player_2.value = 0
+                        player_2.items = knapsack(player_2.max_load, wt, vl, len(wt))
+                        for element in player_2.items:
+                            player_2.current_load += element[0]
+                            player_2.value += element[1]
+                        graph.itens.remove(item)
+                        graph.item_positions.pop((item.rect[0], item.rect[1]))
+                        break
+            else:
+                for item in graph.itens:
+                    if (item.rect[0], item.rect[1]) == p1:
+                        graph.itens.remove(item)
+                        graph.item_positions.pop((item.rect[0], item.rect[1]))
+                        break
+
+
 # main game loop where player input is read
 def game_loop():
     global animation_frames
@@ -647,6 +735,9 @@ def game_loop():
             graph.item_positions[x, y] = item
             elapsed = time.perf_counter()
 
+        ordered_array = mg.merge_sort(get_x_coordinates(graph, player_1, player_2))
+        collision(graph, ordered_array, player_1, player_2)
+
         img_flip(player_1)
         img_flip(player_2)
 
@@ -673,9 +764,15 @@ def game_loop():
             elif player_2.value > player_1.value:
                 restart_game_window("PLAYER 2")
         if dist(player_1.rect.center, (deposit.position[0], deposit.position[1])) < 15:
-            print("knapsack player 1")
+            deposit.player1_value += player_1.value
+            player_1.items.clear()
+            player_1.value = 0
+            player_1.current_load = 0
         if dist(player_2.rect.center, (deposit.position[0], deposit.position[1])) < 15:
-            print("knapsack player 2")
+            deposit.player2_value += player_2.value
+            player_2.items.clear()
+            player_2.value = 0
+            player_2.current_load = 0
         if deposit.player1_value >= 100:
             restart_game_window("PLAYER 1")
         if deposit.player2_value >= 100:

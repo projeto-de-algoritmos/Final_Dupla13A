@@ -4,6 +4,8 @@ import random
 import sys
 import colors
 import pygame
+import time
+
 
 size = (1366, 768)
 spacing = 80
@@ -21,15 +23,15 @@ screen = pygame.display.set_mode(size)
 screen.fill(colors.BLACK)
 
 pygame.display.set_caption("Runner")
-icon = pygame.image.load('src/images/runners.png')
-menu = pygame.image.load('src/images/menu.png')
+icon = pygame.image.load('../images/game/runners.png')
+menu = pygame.image.load('../images/game/menu.png')
 icon_big = pygame.transform.scale(icon, (80, 80))
 pygame.display.set_icon(icon)
 
 font = pygame.font.SysFont('default', 150)
 cost_font = pygame.font.SysFont('default', 30)
 
-
+import auxiliary as aux
 # auxiliary function for drawing text
 def text_hollow(text_font, message, font_color):
     not_color = [c ^ 0xFF for c in font_color]
@@ -134,12 +136,12 @@ def interface(player, player_2, deposit):
     pygame.draw.rect(screen, colors.WHITE, (588, 0, 200, 94))
     pygame.draw.rect(screen, colors.BLACK, (593, 0, 190, 89))
     pygame.draw.rect(screen, colors.WHITE, (688, 0, 5, 94))
-    icon1 = pygame.image.load("images/player1/player1_1.png")
+    icon1 = pygame.image.load("../images/player1/player1_1.png")
     icon1 = pygame.transform.scale(icon1, (22, 22))
     icon1 = icon1.convert()
     icon1.set_colorkey((0, 0, 0))
     screen.blit(icon1, (600, 5))
-    icon2 = pygame.image.load("images/player2/player2_1.png")
+    icon2 = pygame.image.load("../images/player2/player2_1.png")
     icon2 = pygame.transform.scale(icon2, (22, 22))
     icon2 = icon2.convert()
     icon2.set_colorkey((0, 0, 0))
@@ -180,10 +182,13 @@ def update(graph, player, player_2, deposit):
     image2 = pygame.transform.rotate(player_2.image, player_2.angle)
     screen.blit(image2, (player_2.rect[0], player_2.rect[1]))
     interface(player, player_2, deposit)
-    for node in graph.nodes:
-        if deposit.position == (node.rect[0], node.rect[1]):
-            draw_circle(node, colors.EXIT)
-            break
+    draw_circle(deposit, colors.EXIT)
+    for item in graph.itens:
+        if time.perf_counter() - item.time_of_creation > random.uniform(10.0, 12.0):
+            graph.itens.remove(item)
+            graph.item_positions.pop((item.rect[0], item.rect[1]))
+            continue
+        screen.blit(item.item_image, item)
 
 
 # stores nodes and positions
@@ -191,6 +196,8 @@ class Graph(object):
     def __init__(self):
         self.nodes = set()
         self.positions = dict()
+        self.item_positions = dict()
+        self.itens = []
 
     def add_nodes(self, node, pos):
         self.nodes.add(node)
@@ -224,6 +231,27 @@ class Deposit(object):
         self.player1_value = 0
         self.player2_value = 0
         self.goal = 100
+
+
+class Item(object):
+    def __init__(self):
+        self.rect = pygame.Rect(0, 0, 20, 20)
+        self.time_of_creation = time.perf_counter()
+        self.item_image = None
+        self.weight = 0
+        self.value = 0
+        item = {
+            "apple": aux.apple,
+            "banana": aux.banana,
+            "cherry": aux.cherry,
+            "key": aux.key,
+            "orange": aux.orange,
+            "pear": aux.pear,
+            "strawberry": aux.strawberry
+        }
+        itens = ["apple", "banana", "cherry", "key", "orange", "pear", "strawberry"]
+        chances = [0.1, 0.25, 0.1, 0.2, 0.25, 0.25, 0.2]
+        item[random.choices(itens, chances)[0]](self)
 
 
 # shortest path function
@@ -454,7 +482,7 @@ def random_pos():
 
 
 def draw_circle(node, color):
-    return pygame.draw.circle(screen, color, node.rect.center, 10)
+    return pygame.draw.circle(screen, color, (node.position[0]+5, node.position[1]+5), 10)
 
 
 # ensures minimum distance between starting nodes
@@ -556,8 +584,8 @@ def load_animations(path, frame_duration):
 
 
 animation_database = {
-    "player1": load_animations("images/player1", [10, 10, 10]),
-    "player2": load_animations("images/player2", [10, 10, 10]),
+    "player1": load_animations("../images/player1", [10, 10, 10]),
+    "player2": load_animations("../images/player2", [10, 10, 10]),
 }
 
 
@@ -591,6 +619,7 @@ def game_loop():
     player_2.color = colors.PLAYER2
     deposit = Deposit()
     deposit.position = random_pos()
+    elapsed = time.perf_counter()
 
     rev_graph = reverse_graph(graph)
     strongly_connect(graph, rev_graph, player_1.position)
@@ -603,6 +632,20 @@ def game_loop():
     min_dist(graph, player_1, player_2, deposit)
 
     while True:
+
+        if time.perf_counter() - elapsed > random.uniform(2.0, 3.0):
+            x, y = random_pos()
+
+            x = x - 5
+            y = y - 5
+            while (x, y) in graph.item_positions:
+                x, y = random_pos()
+            item = Item()
+            item.rect[0] = x
+            item.rect[1] = y
+            graph.itens.append(item)
+            graph.item_positions[x, y] = item
+            elapsed = time.perf_counter()
 
         img_flip(player_1)
         img_flip(player_2)

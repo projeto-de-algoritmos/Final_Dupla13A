@@ -13,6 +13,7 @@ clock = pygame.time.Clock()
 
 rad = math.pi / 180
 strong_connected = False
+animation_frames = {}
 
 pygame.init()
 
@@ -140,8 +141,10 @@ def update(graph, player, player_2, deposit):
     player_2.rect[0] -= player_2.movement[1]
     player_2.rect[1] += player_2.movement[2]
     player_2.rect[1] -= player_2.movement[3]
-    pygame.draw.rect(screen, player.color, player.rect, 10)
-    pygame.draw.rect(screen, player_2.color, player_2.rect, 10)
+    image = pygame.transform.rotate(player.image, player.angle)
+    screen.blit(image, (player.rect[0], player.rect[1]))
+    image2 = pygame.transform.rotate(player_2.image, player_2.angle)
+    screen.blit(image2, (player_2.rect[0], player_2.rect[1]))
     for node in graph.nodes:
         if deposit.position == (node.rect[0], node.rect[1]):
             draw_circle(node, colors.EXIT)
@@ -167,11 +170,12 @@ class Node(object):
 
 
 class Player(object):
-    def __init__(self):
-        self.color = None
+    def __init__(self, action):
+        self.image = None
+        self.angle = 0
         self.position = random_pos()
         self.movement = [0, 0, 0, 0]
-        self.rect = pygame.Rect(self.position[0], self.position[1], 10, 10)
+        self.rect = pygame.Rect(self.position[0], self.position[1], 20, 20)
 
 
 class Deposit(object):
@@ -431,65 +435,112 @@ def player_movement_control(player, graph):
     x_offset = 43
     y_offset = 24
 
-    closest_x = closest_multiple(player.rect[0], target, x_offset)
-    closest_y = closest_multiple(player.rect[1], target, y_offset)
+    closest_x = closest_multiple(player.rect.center[0], target, x_offset)
+    closest_y = closest_multiple(player.rect.center[1], target, y_offset)
 
-    if abs(player.rect[0] - closest_x) > abs(player.rect[1] - closest_y):
+    if abs(player.rect.center[0] - closest_x - 5) > abs(player.rect.center[1] - closest_y - 5):
         horizontal_move = True
         vertical_move = False
-    elif abs(player.rect[0] - closest_x) < abs(player.rect[1] - closest_y):
+    elif abs(player.rect.center[0] - closest_x) < abs(player.rect.center[1] - closest_y):
         horizontal_move = False
         vertical_move = True
 
     # down
     if (closest_x, closest_y + spacing) in graph.positions:
         if graph.positions[closest_x, closest_y + spacing] not in graph.positions[closest_x, closest_y].neighbours:
-            if player.rect[1] > closest_y + 4:
-                player.rect[1] = closest_y + 4
-    elif player.rect[1] > closest_y + 4:
-        player.rect[1] = closest_y + 4
+            if player.rect.center[1] > closest_y + 8:
+                player.rect.center = (player.rect.center[0], closest_y + 8)
+    elif player.rect.center[1] > closest_y + 8:
+        player.rect.center = (player.rect.center[0], closest_y + 8)
 
     # up
     if (closest_x, closest_y - spacing) in graph.positions:
         if graph.positions[closest_x, closest_y - spacing] not in graph.positions[closest_x, closest_y].neighbours:
-            if player.rect[1] < closest_y - 4:
-                player.rect[1] = closest_y - 4
-    elif player.rect[1] < closest_y - 4:
-        player.rect[1] = closest_y - 4
+            if player.rect.center[1] < closest_y:
+                player.rect.center = (player.rect.center[0], closest_y)
+    elif player.rect.center[1] < closest_y:
+        player.rect.center = (player.rect.center[0], closest_y)
 
     # left
     if (closest_x - spacing, closest_y) in graph.positions:
         if graph.positions[closest_x - spacing, closest_y] not in graph.positions[closest_x, closest_y].neighbours:
-            if player.rect[0] < closest_x - 4:
-                player.rect[0] = closest_x - 4
-    elif player.rect[0] < closest_x - 4:
-        player.rect[0] = closest_x - 4
+            if player.rect.center[0] < closest_x:
+                player.rect.center = (closest_x, player.rect.center[1])
+    elif player.rect.center[0] < closest_x:
+        player.rect.center = (closest_x, player.rect.center[1])
 
     # right
     if (closest_x + spacing, closest_y) in graph.positions:
         if graph.positions[closest_x + spacing, closest_y] not in graph.positions[closest_x, closest_y].neighbours:
-            if player.rect[0] > closest_x + 4:
-                player.rect[0] = closest_x + 4
-    elif player.rect[0] > closest_x + 4:
-        player.rect[0] = closest_x + 4
+            if player.rect.center[0] > closest_x + 8:
+                player.rect.center = (closest_x + 8, player.rect.center[1])
+    elif player.rect.center[0] > closest_x + 8:
+        player.rect.center = (closest_x + 8, player.rect.center[1])
 
     if horizontal_move:
-        if player.rect[1] > closest_y + 4:
-            player.rect[1] = closest_y + 4
-        elif player.rect[1] < closest_y - 4:
-            player.rect[1] = closest_y - 4
+        if player.rect.center[1] > closest_y+8:
+            player.rect.center = (player.rect.center[0], closest_y+8)
+        elif player.rect.center[1] < closest_y:
+            player.rect.center = (player.rect.center[0], closest_y)
     elif vertical_move:
-        if player.rect[0] < closest_x - 4:
-            player.rect[0] = closest_x - 4
-        elif player.rect[0] > closest_x + 4:
-            player.rect[0] = closest_x + 4
+        if player.rect.center[0] < closest_x:
+            player.rect.center = (closest_x, player.rect.center[1])
+        elif player.rect.center[0] > closest_x + 8:
+            player.rect.center = (closest_x + 8, player.rect.center[1])
+
+
+def load_animations(path, frame_duration):
+    global animation_frames
+    animation_name = path.split("/")[-1]
+    animation_frame_data = []
+    n = 0
+    for frame in frame_duration:
+        animation_frame_id = animation_name + "_" + str(n)
+        img_location = path + "/" + animation_frame_id + ".png"
+        animation_image = pygame.image.load(img_location)
+        animation_image = pygame.transform.scale(animation_image, (22, 22))
+        animation_image = animation_image.convert()
+        animation_image.set_colorkey((0, 0, 0))
+        animation_frames[animation_frame_id] = animation_image.copy()
+        for i in range(frame):
+            animation_frame_data.append(animation_frame_id)
+        n += 1
+
+    return animation_frame_data
+
+
+animation_database = {
+    "player1": load_animations("images/player1", [10, 10, 10]),
+    "player2": load_animations("images/player2", [10, 10, 10]),
+}
+
+
+def change_action(action_var, frame, new_value):
+    if action_var != new_value:
+        action_var = new_value
+        frame = 0
+    return action_var, frame
+
+
+def img_flip(player):
+    if player.movement[0] == 2:
+        player.angle = 0
+    if player.movement[1] == 2:
+        player.angle = 180
+    if player.movement[2] == 2:
+        player.angle = 270
+    if player.movement[3] == 2:
+        player.angle = 90
 
 
 # main game loop where player input is read
 def game_loop():
+    global animation_frames
+    player1_frame = 0
+    player2_frame = 0
     graph = create_graph()
-    player_1 = Player()
-    player_2 = Player()
+    player_1 = Player("player1")
+    player_2 = Player("player2")
     player_1.color = colors.PLAYER
     player_2.color = colors.PLAYER2
     deposit = Deposit()
@@ -507,6 +558,21 @@ def game_loop():
 
     while True:
 
+        img_flip(player_1)
+        img_flip(player_2)
+
+        player1_frame += 1
+        if player1_frame >= len(animation_database["player1"]):
+            player1_frame = 0
+        player_img_id = animation_database["player1"][player1_frame]
+        player_1.image = animation_frames[player_img_id]
+
+        player2_frame += 1
+        if player2_frame >= len(animation_database["player2"]):
+            player2_frame = 0
+        player_img_id = animation_database["player2"][player2_frame]
+        player_2.image = animation_frames[player_img_id]
+
         update(graph, player_1, player_2, deposit)
 
         player_movement_control(player_1, graph)
@@ -517,21 +583,21 @@ def game_loop():
                 quit_game()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_DOWN:
-                    player_1.movement[2] = 2
+                    player_1.movement = [0, 0, 2, 0]
                 if event.key == pygame.K_UP:
-                    player_1.movement[3] = 2
+                    player_1.movement = [0, 0, 0, 2]
                 if event.key == pygame.K_LEFT:
-                    player_1.movement[1] = 2
+                    player_1.movement = [0, 2, 0, 0]
                 if event.key == pygame.K_RIGHT:
-                    player_1.movement[0] = 2
+                    player_1.movement = [2, 0, 0, 0]
                 if event.key == pygame.K_s:
-                    player_2.movement[2] = 2
+                    player_2.movement = [0, 0, 2, 0]
                 if event.key == pygame.K_w:
-                    player_2.movement[3] = 2
+                    player_2.movement = [0, 0, 0, 2]
                 if event.key == pygame.K_a:
-                    player_2.movement[1] = 2
+                    player_2.movement = [0, 2, 0, 0]
                 if event.key == pygame.K_d:
-                    player_2.movement[0] = 2
+                    player_2.movement = [2, 0, 0, 0]
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_DOWN:
                     player_1.movement[2] = 0

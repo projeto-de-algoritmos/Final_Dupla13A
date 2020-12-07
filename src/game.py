@@ -18,7 +18,7 @@ animation_frames = {}
 pygame.init()
 
 screen = pygame.display.set_mode(size)
-screen.fill(colors.WHITE)
+screen.fill(colors.BLACK)
 
 pygame.display.set_caption("Runner")
 icon = pygame.image.load('src/images/runners.png')
@@ -130,8 +130,42 @@ def quit_game():
     sys.exit()
 
 
+def interface(player, player_2, deposit):
+    pygame.draw.rect(screen, colors.WHITE, (588, 0, 200, 94))
+    pygame.draw.rect(screen, colors.BLACK, (593, 0, 190, 89))
+    pygame.draw.rect(screen, colors.WHITE, (688, 0, 5, 94))
+    icon1 = pygame.image.load("images/player1/player1_1.png")
+    icon1 = pygame.transform.scale(icon1, (22, 22))
+    icon1 = icon1.convert()
+    icon1.set_colorkey((0, 0, 0))
+    screen.blit(icon1, (600, 5))
+    icon2 = pygame.image.load("images/player2/player2_1.png")
+    icon2 = pygame.transform.scale(icon2, (22, 22))
+    icon2 = icon2.convert()
+    icon2.set_colorkey((0, 0, 0))
+    screen.blit(icon2, (700, 5))
+    goal1 = text_outline(pygame.font.SysFont('default', 25),
+                         'G: ' + str(deposit.player1_value) + "/" + str(deposit.goal), colors.WHITE, colors.BLACK)
+    screen.blit(goal1, (608, 70))
+    goal2 = text_outline(pygame.font.SysFont('default', 25),
+                         'G: ' + str(deposit.player2_value) + "/" + str(deposit.goal), colors.WHITE, colors.BLACK)
+    screen.blit(goal2, (705, 70))
+    cargo1 = text_outline(pygame.font.SysFont('default', 25),
+                          'L: ' + str(player.current_load) + "/" + str(player.max_load), colors.WHITE, colors.BLACK)
+    screen.blit(cargo1, (613, 40))
+    cargo2 = text_outline(pygame.font.SysFont('default', 25),
+                          'L: ' + str(player_2.current_load) + "/" + str(player_2.max_load), colors.WHITE, colors.BLACK)
+    screen.blit(cargo2, (708, 40))
+    points1 = text_outline(pygame.font.SysFont('default', 25),
+                           'P: ' + str(player.value), colors.WHITE, colors.BLACK)
+    screen.blit(points1, (635, 8))
+    points2 = text_outline(pygame.font.SysFont('default', 25),
+                           'P: ' + str(player_2.value), colors.WHITE, colors.BLACK)
+    screen.blit(points2, (735, 8))
+
+
 def update(graph, player, player_2, deposit):
-    screen.fill(colors.WHITE)
+    screen.fill(colors.BLACK)
     draw_walls(graph)
     player.rect[0] += player.movement[0]
     player.rect[0] -= player.movement[1]
@@ -145,9 +179,11 @@ def update(graph, player, player_2, deposit):
     screen.blit(image, (player.rect[0], player.rect[1]))
     image2 = pygame.transform.rotate(player_2.image, player_2.angle)
     screen.blit(image2, (player_2.rect[0], player_2.rect[1]))
+    interface(player, player_2, deposit)
     for node in graph.nodes:
         if deposit.position == (node.rect[0], node.rect[1]):
             draw_circle(node, colors.EXIT)
+            break
 
 
 # stores nodes and positions
@@ -170,8 +206,11 @@ class Node(object):
 
 
 class Player(object):
-    def __init__(self, action):
+    def __init__(self):
         self.image = None
+        self.max_load = 30
+        self.current_load = 0
+        self.value = 0
         self.angle = 0
         self.position = random_pos()
         self.movement = [0, 0, 0, 0]
@@ -182,6 +221,9 @@ class Deposit(object):
     def __init__(self):
         self.color = colors.EXIT
         self.position = random_pos()
+        self.player1_value = 0
+        self.player2_value = 0
+        self.goal = 100
 
 
 # shortest path function
@@ -379,32 +421,36 @@ def draw_walls(graph):
         bottom_neighbour = 0
         for neighbour in node.neighbours:
             if node.rect[0] > neighbour.rect[0]:
-                pygame.draw.rect(screen, colors.NODE, (node.rect.center[0] - 20, node.rect.center[1] + 15, -45, 5))
-                pygame.draw.rect(screen, colors.NODE, (node.rect.center[0] - 20, node.rect.center[1] - 20, -45, 5))
+                pygame.draw.rect(screen, colors.WHITE, (node.rect.center[0] - 20, node.rect.center[1] + 15, -45, 5))
+                pygame.draw.rect(screen, colors.WHITE, (node.rect.center[0] - 20, node.rect.center[1] - 20, -45, 5))
                 left_neighbour += 1
             elif node.rect[0] < neighbour.rect[0]:
                 right_neighbour += 1
             elif node.rect[1] < neighbour.rect[1]:
-                pygame.draw.rect(screen, colors.NODE, (node.rect.center[0] + 14, node.rect.center[1] + 20, 5, 45))
-                pygame.draw.rect(screen, colors.NODE, (node.rect.center[0] - 20, node.rect.center[1] + 15, 5, 50))
+                pygame.draw.rect(screen, colors.WHITE, (node.rect.center[0] + 14, node.rect.center[1] + 20, 5, 45))
+                pygame.draw.rect(screen, colors.WHITE, (node.rect.center[0] - 20, node.rect.center[1] + 15, 5, 50))
                 bottom_neighbour += 1
             elif node.rect[1] > neighbour.rect[1]:
                 top_neighbour += 1
 
         if left_neighbour == 0:
-            pygame.draw.rect(screen, colors.NODE, (node.rect.center[0] - 20, node.rect.center[1] - 20, 5, 40))
+            pygame.draw.rect(screen, colors.WHITE, (node.rect.center[0] - 20, node.rect.center[1] - 20, 5, 40))
         if right_neighbour == 0:
-            pygame.draw.rect(screen, colors.NODE, (node.rect.center[0] + 14, node.rect.center[1] - 20, 5, 40))
+            pygame.draw.rect(screen, colors.WHITE, (node.rect.center[0] + 14, node.rect.center[1] - 20, 5, 40))
         if top_neighbour == 0:
-            pygame.draw.rect(screen, colors.NODE, (node.rect.center[0] - 20, node.rect.center[1] - 20, 39, 5))
+            pygame.draw.rect(screen, colors.WHITE, (node.rect.center[0] - 20, node.rect.center[1] - 20, 39, 5))
         if bottom_neighbour == 0:
-            pygame.draw.rect(screen, colors.NODE, (node.rect.center[0] - 20, node.rect.center[1] + 15, 39, 5))
+            pygame.draw.rect(screen, colors.WHITE, (node.rect.center[0] - 20, node.rect.center[1] + 15, 39, 5))
 
 
 # returns random position
 def random_pos():
-    return (random.randrange(starting_x, (((size[0] - 20) // spacing) * spacing), spacing),
-            random.randrange(starting_y, (((size[1] - 20) // spacing) * spacing), spacing))
+    random_x = 590
+    random_y = 80
+    while 588 < random_x < 788 and random_y < 94:
+        random_x = random.randrange(starting_x, (((size[0] - 20) // spacing) * spacing), spacing)
+        random_y = random.randrange(starting_y, (((size[1] - 20) // spacing) * spacing), spacing)
+    return random_x, random_y
 
 
 def draw_circle(node, color):
@@ -478,8 +524,8 @@ def player_movement_control(player, graph):
         player.rect.center = (closest_x + 8, player.rect.center[1])
 
     if horizontal_move:
-        if player.rect.center[1] > closest_y+8:
-            player.rect.center = (player.rect.center[0], closest_y+8)
+        if player.rect.center[1] > closest_y + 8:
+            player.rect.center = (player.rect.center[0], closest_y + 8)
         elif player.rect.center[1] < closest_y:
             player.rect.center = (player.rect.center[0], closest_y)
     elif vertical_move:
@@ -539,8 +585,8 @@ def game_loop():
     player1_frame = 0
     player2_frame = 0
     graph = create_graph()
-    player_1 = Player("player1")
-    player_2 = Player("player2")
+    player_1 = Player()
+    player_2 = Player()
     player_1.color = colors.PLAYER
     player_2.color = colors.PLAYER2
     deposit = Deposit()

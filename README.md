@@ -52,6 +52,7 @@ python3 src/game.py
 * Controle o jogador1 com as teclas ←, ↑, →,  ↓ do teclado.
 * Controle o jogador2 com as teclas W, S, A, D do teclado.
 * Pegue as frutas passando por elas.
+* Deposite suas frutas passand pelo depósito.
 * Clique em *Restart* para jogar novamente.
 * Clique em *Quit* para encerrar o jogo.
 

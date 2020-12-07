@@ -1,11 +1,12 @@
+import closest_pair_of_points as closest
+import colors
 import copy
 import math
+import merge_sort as mg
+import pygame
 import random
 import sys
-import colors
-import pygame
 import time
-import merge_sort as mg, closest_pair_of_points as closest
 
 size = (1366, 768)
 spacing = 80
@@ -50,7 +51,7 @@ def menu_game_window():
         screen.fill(colors.WHITE)
         screen.blit(menu, (0, 0))
 
-        aux.button(screen, 'PLAY', 565, 450, 200, 120, colors.YELLOW, game_loop)
+        aux.button(screen, 'PLAY', 565, 450, 200, 120, colors.BRIGHT_YELLOW, game_loop)
         pygame.display.update()
         clock.tick(15)
 
@@ -90,24 +91,25 @@ def interface(player, player_2, deposit):
     icon2 = icon2.convert()
     icon2.set_colorkey((0, 0, 0))
     screen.blit(icon2, (700, 5))
-    
+
     goal1 = aux.text_outline(pygame.font.SysFont('default', 25),
-                         'G: ' + str(deposit.player1_value) + "/" + str(deposit.goal), colors.WHITE, colors.BLACK)
+                             'G: ' + str(deposit.player1_value) + "/" + str(deposit.goal), colors.WHITE, colors.BLACK)
     screen.blit(goal1, (608, 70))
     goal2 = aux.text_outline(pygame.font.SysFont('default', 25),
-                         'G: ' + str(deposit.player2_value) + "/" + str(deposit.goal), colors.WHITE, colors.BLACK)
+                             'G: ' + str(deposit.player2_value) + "/" + str(deposit.goal), colors.WHITE, colors.BLACK)
     screen.blit(goal2, (705, 70))
     cargo1 = aux.text_outline(pygame.font.SysFont('default', 25),
-                          'L: ' + str(player.current_load) + "/" + str(player.max_load), colors.WHITE, colors.BLACK)
+                              'L: ' + str(player.current_load) + "/" + str(player.max_load), colors.WHITE, colors.BLACK)
     screen.blit(cargo1, (613, 40))
     cargo2 = aux.text_outline(pygame.font.SysFont('default', 25),
-                          'L: ' + str(player_2.current_load) + "/" + str(player_2.max_load), colors.WHITE, colors.BLACK)
+                              'L: ' + str(player_2.current_load) + "/" + str(player_2.max_load), colors.WHITE,
+                              colors.BLACK)
     screen.blit(cargo2, (708, 40))
     points1 = aux.text_outline(pygame.font.SysFont('default', 25),
-                           'P: ' + str(player.value), colors.WHITE, colors.BLACK)
+                               'P: ' + str(player.value), colors.WHITE, colors.BLACK)
     screen.blit(points1, (635, 8))
     points2 = aux.text_outline(pygame.font.SysFont('default', 25),
-                           'P: ' + str(player_2.value), colors.WHITE, colors.BLACK)
+                               'P: ' + str(player_2.value), colors.WHITE, colors.BLACK)
     screen.blit(points2, (735, 8))
 
 
@@ -127,9 +129,11 @@ def update(graph, player, player_2, deposit):
     image2 = pygame.transform.rotate(player_2.image, player_2.angle)
     screen.blit(image2, (player_2.rect[0], player_2.rect[1]))
     interface(player, player_2, deposit)
-    draw_circle(deposit, colors.EXIT)
+    deposit_icon = pygame.image.load("images/game/chest.png")
+    deposit_icon = pygame.transform.scale(deposit_icon, (22, 22))
+    screen.blit(deposit_icon, deposit)
     for item in graph.itens:
-        if time.perf_counter() - item.time_of_creation > random.uniform(10.0, 12.0):
+        if time.perf_counter() - item.time_of_creation > random.uniform(20.0, 22.0):
             graph.itens.remove(item)
             graph.item_positions.pop((item.rect[0], item.rect[1]))
             continue
@@ -174,6 +178,7 @@ class Deposit(object):
     def __init__(self):
         self.color = colors.EXIT
         self.position = random_pos()
+        self.rect = pygame.Rect(self.position[0] - 5, self.position[1] - 5, 20, 20)
         self.player1_value = 0
         self.player2_value = 0
         self.goal = 100
@@ -427,8 +432,8 @@ def random_pos():
     return random_x, random_y
 
 
-def draw_circle(node, color):
-    return pygame.draw.circle(screen, color, (node.position[0] + 5, node.position[1] + 5), 10)
+def draw_circle(position, color):
+    return pygame.draw.circle(screen, color, (position[0] + 5, position[1] + 5), 10)
 
 
 # ensures minimum distance between starting nodes
@@ -543,13 +548,13 @@ def change_action(action_var, frame, new_value):
 
 
 def img_flip(player):
-    if player.movement[0] == 2:
+    if player.movement[0] == 3:
         player.angle = 0
-    if player.movement[1] == 2:
+    if player.movement[1] == 3:
         player.angle = 180
-    if player.movement[2] == 2:
+    if player.movement[2] == 3:
         player.angle = 270
-    if player.movement[3] == 2:
+    if player.movement[3] == 3:
         player.angle = 90
 
 
@@ -580,11 +585,11 @@ def knapsack(w, wt, val, n):
 
     result = []
     for i in range(n, 0, -1):
-        if k[i-1][w] == k[i][w]:
+        if k[i - 1][w] == k[i][w]:
             continue
         else:
-            result.append([wt[i-1], val[i-1]])
-            w -= wt[i-1]
+            result.append([wt[i - 1], val[i - 1]])
+            w -= wt[i - 1]
 
     return result
 
@@ -653,7 +658,6 @@ def game_loop():
     player_1.color = colors.PLAYER
     player_2.color = colors.PLAYER2
     deposit = Deposit()
-    deposit.position = random_pos()
     elapsed = time.perf_counter()
 
     rev_graph = reverse_graph(graph)
@@ -730,21 +734,21 @@ def game_loop():
                 quit_game()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_DOWN:
-                    player_1.movement[2] = 2
+                    player_1.movement[2] = 3
                 if event.key == pygame.K_UP:
-                    player_1.movement[3] = 2
+                    player_1.movement[3] = 3
                 if event.key == pygame.K_LEFT:
-                    player_1.movement[1] = 2
+                    player_1.movement[1] = 3
                 if event.key == pygame.K_RIGHT:
-                    player_1.movement[0] = 2
+                    player_1.movement[0] = 3
                 if event.key == pygame.K_s:
-                    player_2.movement[2] = 2
+                    player_2.movement[2] = 3
                 if event.key == pygame.K_w:
-                    player_2.movement[3] = 2
+                    player_2.movement[3] = 3
                 if event.key == pygame.K_a:
-                    player_2.movement[1] = 2
+                    player_2.movement[1] = 3
                 if event.key == pygame.K_d:
-                    player_2.movement[0] = 2
+                    player_2.movement[0] = 3
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_DOWN:
                     player_1.movement[2] = 0
@@ -763,6 +767,9 @@ def game_loop():
                 if event.key == pygame.K_d:
                     player_2.movement[0] = 0
 
+        sound = pygame.mixer.Sound("src/pacman_sound.ogg")
+        sound.set_volume(0.01)
+        sound.play()
         pygame.display.update()
         clock.tick(60)
 

@@ -79,12 +79,6 @@ def text_outline(text_font, message, font_color, outline_color):
     return img
 
 
-def text_objects(text, text_font):
-    text_surface = text_font.render(text, True, colors.NODE)
-    return text_surface, text_surface.get_rect()
-
-
-
 def apple(item):
     item.weight = random.randint(8, 10)
     item.value = random.randint(3, 5)

@@ -686,21 +686,21 @@ def game_loop():
                 quit_game()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_DOWN:
-                    player_1.movement = [0, 0, 2, 0]
+                    player_1.movement[2] = 2
                 if event.key == pygame.K_UP:
-                    player_1.movement = [0, 0, 0, 2]
+                    player_1.movement[3] = 2
                 if event.key == pygame.K_LEFT:
-                    player_1.movement = [0, 2, 0, 0]
+                    player_1.movement[1] = 2
                 if event.key == pygame.K_RIGHT:
-                    player_1.movement = [2, 0, 0, 0]
+                    player_1.movement[0] = 2
                 if event.key == pygame.K_s:
-                    player_2.movement = [0, 0, 2, 0]
+                    player_2.movement[2] = 2
                 if event.key == pygame.K_w:
-                    player_2.movement = [0, 0, 0, 2]
+                    player_2.movement[3] = 2
                 if event.key == pygame.K_a:
-                    player_2.movement = [0, 2, 0, 0]
+                    player_2.movement[1] = 2
                 if event.key == pygame.K_d:
-                    player_2.movement = [2, 0, 0, 0]
+                    player_2.movement[0] = 2
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_DOWN:
                     player_1.movement[2] = 0

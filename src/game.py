@@ -18,13 +18,12 @@ strong_connected = False
 animation_frames = {}
 
 pygame.init()
-
 screen = pygame.display.set_mode(size)
 screen.fill(colors.BLACK)
 
-pygame.display.set_caption("Runner")
-icon = pygame.image.load('../images/game/runners.png')
-menu = pygame.image.load('../images/game/menu.png')
+pygame.display.set_caption("NotPacMan")
+icon = pygame.image.load('images/game/pac.png')
+menu = pygame.image.load('images/game/menu.png')
 icon_big = pygame.transform.scale(icon, (80, 80))
 pygame.display.set_icon(icon)
 
@@ -34,62 +33,9 @@ cost_font = pygame.font.SysFont('default', 30)
 import auxiliary as aux
 
 
-# auxiliary function for drawing text
-def text_hollow(text_font, message, font_color):
-    not_color = [c ^ 0xFF for c in font_color]
-    base = text_font.render(message, 0, font_color, not_color)
-    box_size = base.get_width() + 2, base.get_height() + 2
-    img = pygame.Surface(box_size, 16)
-    img.fill(not_color)
-    base.set_colorkey(0)
-    img.blit(base, (0, 0))
-    img.blit(base, (2, 0))
-    img.blit(base, (0, 2))
-    img.blit(base, (2, 2))
-    base.set_colorkey(0)
-    base.set_palette_at(1, not_color)
-    img.blit(base, (1, 1))
-    img.set_colorkey(not_color)
-    return img
-
-
-# auxiliary function for drawing text
-def text_outline(text_font, message, font_color, outline_color):
-    base = text_font.render(message, 0, font_color)
-    outline = text_hollow(text_font, message, outline_color)
-    img = pygame.Surface(outline.get_size(), 16)
-    img.blit(base, (1, 1))
-    img.blit(outline, (0, 0))
-    img.set_colorkey(0)
-    return img
-
-
 def game_win_text(player):
-    win_text = text_outline(font, str(player) + " WINS!", colors.WHITE, colors.BLACK)
+    win_text = aux.text_outline(font, str(player) + " WINS!", colors.WHITE, colors.BLACK)
     screen.blit(win_text, (270, 300))
-
-
-def text_objects(text, text_font):
-    text_surface = text_font.render(text, True, colors.NODE)
-    return text_surface, text_surface.get_rect()
-
-
-# creates a button
-def button(msg, x, y, w, h, ic, action=None):
-    mouse = pygame.mouse.get_pos()
-    click = pygame.mouse.get_pressed()
-
-    if x + w > mouse[0] > x and y + h > mouse[1] > y:
-        pygame.draw.rect(screen, (ic[0] - 20, ic[1] - 20, ic[2] - 20), (x, y, w, h))
-        if click[0] == 1 and action is not None:
-            action()
-    else:
-        pygame.draw.rect(screen, ic, (x, y, w, h))
-
-    small_text = pygame.font.SysFont("default", 20)
-    text_surf, text_rect = text_objects(msg, small_text)
-    text_rect.center = ((x + (w / 2)), (y + (h / 2)))
-    screen.blit(text_surf, text_rect)
 
 
 def menu_game_window():
@@ -104,7 +50,7 @@ def menu_game_window():
         screen.fill(colors.WHITE)
         screen.blit(menu, (0, 0))
 
-        button('START', 590, 550, 200, 100, colors.BRIGHT_GREEN, game_loop)
+        aux.button(screen, 'PLAY', 565, 450, 200, 120, colors.YELLOW, game_loop)
         pygame.display.update()
         clock.tick(15)
 
@@ -118,8 +64,8 @@ def restart_game_window(player):
                 quit_game()
 
         game_win_text(player)
-        button('RESTART', 510, 450, 100, 50, colors.GREEN, game_loop)
-        button('QUIT', 750, 450, 100, 50, colors.RED, quit_game)
+        aux.button(screen, 'RESTART', 510, 450, 100, 50, colors.GREEN, game_loop)
+        aux.button(screen, 'QUIT', 750, 450, 100, 50, colors.RED, quit_game)
 
         pygame.display.update()
         clock.tick(15)
@@ -134,32 +80,33 @@ def interface(player, player_2, deposit):
     pygame.draw.rect(screen, colors.WHITE, (588, 0, 200, 94))
     pygame.draw.rect(screen, colors.BLACK, (593, 0, 190, 89))
     pygame.draw.rect(screen, colors.WHITE, (688, 0, 5, 94))
-    icon1 = pygame.image.load("../images/player1/player1_1.png")
+    icon1 = pygame.image.load("images/player1/player1_1.png")
     icon1 = pygame.transform.scale(icon1, (22, 22))
     icon1 = icon1.convert()
     icon1.set_colorkey((0, 0, 0))
     screen.blit(icon1, (600, 5))
-    icon2 = pygame.image.load("../images/player2/player2_1.png")
+    icon2 = pygame.image.load("images/player2/player2_1.png")
     icon2 = pygame.transform.scale(icon2, (22, 22))
     icon2 = icon2.convert()
     icon2.set_colorkey((0, 0, 0))
     screen.blit(icon2, (700, 5))
-    goal1 = text_outline(pygame.font.SysFont('default', 25),
+    
+    goal1 = aux.text_outline(pygame.font.SysFont('default', 25),
                          'G: ' + str(deposit.player1_value) + "/" + str(deposit.goal), colors.WHITE, colors.BLACK)
     screen.blit(goal1, (608, 70))
-    goal2 = text_outline(pygame.font.SysFont('default', 25),
+    goal2 = aux.text_outline(pygame.font.SysFont('default', 25),
                          'G: ' + str(deposit.player2_value) + "/" + str(deposit.goal), colors.WHITE, colors.BLACK)
     screen.blit(goal2, (705, 70))
-    cargo1 = text_outline(pygame.font.SysFont('default', 25),
+    cargo1 = aux.text_outline(pygame.font.SysFont('default', 25),
                           'L: ' + str(player.current_load) + "/" + str(player.max_load), colors.WHITE, colors.BLACK)
     screen.blit(cargo1, (613, 40))
-    cargo2 = text_outline(pygame.font.SysFont('default', 25),
+    cargo2 = aux.text_outline(pygame.font.SysFont('default', 25),
                           'L: ' + str(player_2.current_load) + "/" + str(player_2.max_load), colors.WHITE, colors.BLACK)
     screen.blit(cargo2, (708, 40))
-    points1 = text_outline(pygame.font.SysFont('default', 25),
+    points1 = aux.text_outline(pygame.font.SysFont('default', 25),
                            'P: ' + str(player.value), colors.WHITE, colors.BLACK)
     screen.blit(points1, (635, 8))
-    points2 = text_outline(pygame.font.SysFont('default', 25),
+    points2 = aux.text_outline(pygame.font.SysFont('default', 25),
                            'P: ' + str(player_2.value), colors.WHITE, colors.BLACK)
     screen.blit(points2, (735, 8))
 
@@ -583,8 +530,8 @@ def load_animations(path, frame_duration):
 
 
 animation_database = {
-    "player1": load_animations("../images/player1", [10, 10, 10]),
-    "player2": load_animations("../images/player2", [10, 10, 10]),
+    "player1": load_animations("images/player1", [10, 10, 10]),
+    "player2": load_animations("images/player2", [10, 10, 10]),
 }
 
 

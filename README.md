@@ -31,9 +31,13 @@ O projeto utiliza os algoritmos Dijkstra, Par de Pontos Mais Próximos e Knapsac
 
 ![print_win](images/screenshots/image3.png)
 
-* ### Tela de vitória do Player 1
+* ### Tela de vitória do Player 2
 
 ![print_win](images/screenshots/image4.png)
+
+* ### Jogo
+
+![print_win](images/screenshots/gif.gif)
 
 ## Instalação 
 **Linguagem**: Python<br>
@@ -67,12 +71,10 @@ python3 src/game.py
 * Controle o jogador1 com as teclas ←, ↑, →,  ↓ do teclado.
 * Controle o jogador2 com as teclas W, S, A, D do teclado.
 * Pegue as frutas passando por elas.
-* Deposite suas frutas passand pelo depósito.
+* Deposite suas frutas passando pelo depósito.
 * Clique em *Restart* para jogar novamente.
 * Clique em *Quit* para encerrar o jogo.
 
 ## Outros 
 **Importante**: para comer o jogador adversário, é necessário ter mais pontos em si (não no depósito) do que o jogador adversário.
-
-
 

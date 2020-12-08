@@ -42,11 +42,11 @@ python3 src/game.py
 ## Uso 
 
 ### Vídeo explicativo
-[Video]()
+[Video](https://github.com/projeto-de-algoritmos/Final_NotPacMan/blob/master/video_explicativo.mp4)
 
 * Jogador1 - pacman amarelo.
 * Jogador2 - pacman azul.
-* Depósito - círculo vermelho.
+* Depósito - baú.
 
 * Clique com o botão esquerdo do mouse em *Start*
 * Controle o jogador1 com as teclas ←, ↑, →,  ↓ do teclado.

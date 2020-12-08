@@ -18,7 +18,22 @@ O projeto utiliza os algoritmos Dijkstra, Par de Pontos Mais Próximos e Knapsac
 * O Knapsack é utilizado para otimizar a combinação de frutas que são guardadas no inventário de cada jogador. Caso o jogador colida com uma fruta, o Knapsack irá decidir se vale ou não a pena descartar uma ou mais frutas que o jogador possui para pegar a nova fruta, sempre maximizando o valor.
 
 ## Screenshots
-Adicione 3 ou mais screenshots do projeto em funcionamento.
+
+* ### Menu
+
+![print_menu](images/screenshots/image1.png)
+
+* ### Tela inicial do Jogo
+
+![print_game](images/screenshots/image2.png)
+
+* ### Tela de vitória do Player 1
+
+![print_win](images/screenshots/image3.png)
+
+* ### Tela de vitória do Player 1
+
+![print_win](images/screenshots/image4.png)
 
 ## Instalação 
 **Linguagem**: Python<br>
